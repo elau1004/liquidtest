@@ -1,0 +1,294 @@
+databaseChangeLog:
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+            - dbms:
+                type: oracle
+            - dbms:
+                type: postgresql
+
+    - changeSet:
+        id: ${lane_version}01-TOLL_ROAD.1      # major.minor.patch.module.order.tablename.seq
+        author: elau
+        labels: lane
+        context: ddl
+        comment: "Create TOLL_ROAD table"
+
+        # Change MUST be idempotent!
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            not:
+                tableExists:
+                    tableName: TOLL_ROAD
+            comment: "Skip creation if TOLL_ROAD table exists"
+        changes:
+            - createSequence:
+                sequenceName: TOLL_ROAD_SEQ
+            - createTable:
+                tableName: TOLL_ROAD
+                tablespace: ${lane_tbs}
+                remarks: "Stores information related to toll roads"
+                columns:
+                    - column:
+                        name: TOLL_ROAD_ID
+                        type: BIGINT
+                        remarks: "Identifier for the toll road"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN001
+                            primaryKey: true
+                            primaryKeyName: TOLL_ROAD_PK
+                            primaryKeyTablespace: ${lane_ixs}
+                    - column:
+                        name: TOLL_ROAD_CODE
+                        type: VARCHAR(50)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN006
+                    - column:
+                        name: ROAD_AGENCY_ID
+                        type: INTEGER
+                        remarks: "Identifier for the road agency"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN002
+                    - column:
+                        name: ROAD_NAME
+                        type: VARCHAR(100)
+                        remarks: "Name of road"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN005
+                    - column:
+                        name: DATA_STATUS_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN003
+                    - column:
+                        name: DATA_STATUS_CODE
+                        type: VARCHAR(50)
+                        remarks: "List of data status types (active, archived, etc)"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN004
+                    - column:
+                        name: CREATED_ON
+                        type: TIMESTAMP
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was created"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN007
+                    - column:
+                        name: CREATED_BY_ID
+                        type: INTEGER
+                        remarks: "ID of user who created record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN008
+                    - column:
+                        name: UPDATED_ON
+                        type: TIMESTAMP
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was updated"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN009
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: INTEGER
+                        remarks: "ID of user who updated record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN010
+                    - column:
+                        name: VERSION
+                        type: BIGINT
+                        remarks: "Opportunistic locking (oplock) (Gorm)"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN011
+                    - column:
+                        name: PID
+                        type: VARCHAR(50)
+                        remarks: "Process identifier"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN012
+                    - column:
+                        name: P_UUID
+                        type: BIGINT
+                        remarks: "Process universally unique identifier that is specific to related PID"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN013
+                    - column:
+                        name: ALH_ID
+                        type: BIGINT
+                        remarks: "Access log history-history of all access logs for a single CSR"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_ROAD_NN014
+            - createIndex:
+                indexName: TOLL_ROAD_IDX02
+                tableName: TOLL_ROAD
+                tablespace: ${lane_ixs}
+                unique: true
+                columns:
+                    - column:
+                        name: ROAD_AGENCY_ID
+                    - column:
+                        name: ROAD_NAME
+            - createIndex:
+                indexName: TOLL_ROAD_IDX03
+                tableName: TOLL_ROAD
+                tablespace: ${lane_ixs}
+                unique: true
+                columns:
+                    - column:
+                        name: TOLL_ROAD_CODE
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_ROAD
+                baseColumnNames: ROAD_AGENCY_ID
+                referencedTableName: AGENCY
+                referencedColumnNames: AGENCY_ID
+                constraintName: TOLL_ROAD_FK01
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_ROAD
+                baseColumnNames: CREATED_BY_ID
+                referencedTableName: AGENCY_USER
+                referencedColumnNames: AGENCY_USER_ID
+                constraintName: TOLL_ROAD_FK02
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_ROAD
+                baseColumnNames: UPDATED_BY_ID
+                referencedTableName: AGENCY_USER
+                referencedColumnNames: AGENCY_USER_ID
+                constraintName: TOLL_ROAD_FK03
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_ROAD
+                baseColumnNames: DATA_STATUS_ID
+                referencedTableName: CODE_ATTRIBUTE
+                referencedColumnNames: ID
+                constraintName: TOLL_ROAD_FK04
+        rollback:
+            - dropTable:
+                tableName: TOLL_ROAD
+                ifExists: true
+            - dropSequence:
+                sequenceName: TOLL_ROAD_SEQ
+                ifExists: true
+    
+    - changeSet:
+        id: ${lane_version}01-TOLL_ROAD.2
+        author: elau
+        labels: lane
+        context: ddl
+        comment: "Prime TOLL_ROAD table"
+        preConditions:
+            onFail: HALT
+            onError: HALT
+            tableExists:
+                tableName: TOLL_ROAD
+            rowCount:
+                tableName: TOLL_ROAD
+                expectedRows: 0
+            comment: "Prime TOLL_ROAD only if table exists"
+        changes:
+            - loadData:
+                tableName: TOLL_ROAD
+                file: goldschema/toll_road.tsv
+                separator: "\t"
+                commentLineStarts: "#"
+                usePreparedStatements: true
+                columns:
+                    - column:
+                        name: TOLL_ROAD_ID
+                        type: NUMERIC
+                    - column:
+                        name: TOLL_ROAD_CODE
+                        type: STRING
+                    - column:
+                        name: ROAD_AGENCY_ID
+                        type: NUMERIC
+                    - column:
+                        name: DATA_STATUS_ID
+                        type: NUMERIC
+                    - column:
+                        name: DATA_STATUS_CODE
+                        type: STRING
+                    - column:
+                        name: ROAD_NAME
+                        type: STRING
+                    - column:
+                        name: CREATED_ON
+                        type: DATETIME
+                    - column:
+                        name: CREATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: UPDATED_ON
+                        type: DATETIME
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: VERSION
+                        type: NUMERIC
+                    - column:
+                        name: PID
+                        type: STRING
+                    - column:
+                        name: P_UUID
+                        type: NUMERIC
+                    - column:
+                        name: ALH_ID
+                        type: NUMERIC
+            - sql:
+                dbms: oracle
+                splitStatements: false
+                sql: |
+                    DECLARE
+                        max_id  NUMBER;
+                        sql_ddl VARCHAR(128);
+                    BEGIN
+                        SELECT  COALESCE( MAX(TOLL_ROAD_ID) ,0) +1
+                        INTO    max_id
+                        FROM    TOLL_ROAD
+                        ;
+                        sql_ddl := 'ALTER SEQUENCE TOLL_ROAD_SEQ RESTART START WITH ' || max_id;
+                        EXECUTE IMMEDIATE sql_ddl;
+                    END;
+            - sql:
+                dbms: postgresql
+                splitStatements: false
+                sql: |
+                    DO $$
+                    DECLARE
+                        max_id  BIGINT;
+                        sql_ddl TEXT;
+                    BEGIN
+                        SELECT  COALESCE( MAX(TOLL_ROAD_ID) ,0) +1
+                        INTO    max_id
+                        FROM    TOLL_ROAD
+                        ;
+                        sql_ddl := 'ALTER SEQUENCE TOLL_ROAD_SEQ RESTART WITH ' || max_id;
+                        EXECUTE sql_ddl;
+                    END $$;
+        rollback:
+            - sql:
+                dbms: oracle
+                sql: |
+                    TRUNCATE TABLE TOLL_ROAD;
+                    ALTER SEQUENCE TOLL_ROAD_SEQ RESTART START WITH 1;
+            - sql:
+                dbms: postgresql
+                sql: |
+                    TRUNCATE TABLE TOLL_ROAD;
+                    ALTER SEQUENCE TOLL_ROAD_SEQ RESTART WITH 1;

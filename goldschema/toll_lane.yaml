@@ -1,0 +1,358 @@
+databaseChangeLog:
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+            - dbms:
+                type: oracle
+            - dbms:
+                type: postgresql
+
+    - changeSet:
+        id: ${lane_version}03-TOLL_LANE.1     # major.minor.patch.module.order.tablename.seq
+        author: elau
+        labels: lane
+        context: ddl
+        comment: "Create TOLL_LANE table"
+
+        # Change MUST be idempotent!
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            not:
+                tableExists:
+                    tableName: TOLL_LANE
+            comment: "Skip creation if TOLL_LANE table exists"
+        changes:
+            - createSequence:
+                sequenceName: TOLL_LANE_SEQ
+            - createTable:
+                tableName: TOLL_LANE
+                tablespace: ${lane_tbs}
+                remarks: "Stores information related to list of lanes for each plaza"
+                columns:
+                    - column:
+                        name: TOLL_LANE_ID
+                        type: BIGINT
+                        remarks: "Identifier for the toll lane"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN001
+                            primaryKey: true
+                            primaryKeyName: TOLL_LANE_PK
+                            primaryKeyTablespace: USERS
+                    - column:
+                        name: TOLL_LANE_CODE
+                        type: VARCHAR(50)
+                        remarks: ""
+                    - column:
+                        name: TOLL_LOCATION_ID
+                        type: BIGINT
+                        remarks: "Identifier for the toll location"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN007
+                    - column:
+                        name: DATA_STATUS_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN003
+                    - column:
+                        name: DATA_STATUS_CODE
+                        type: VARCHAR(50)
+                        remarks: "List of data status types (active, archived, etc)"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN004
+                    - column:
+                        name: LANE
+                        type: INTEGER
+                        remarks: "Lane"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN005
+                    - column:
+                        name: LANE_DESCRIPTION
+                        type: VARCHAR(50)
+                        remarks: "Description of lane"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN006
+                    - column:
+                        name: LANE_NAME
+                        type: VARCHAR(50)
+                        remarks: "Name of lane"
+                    - column:
+                        name: TCA_PLAZA_TYPE
+                        type: SMALLINT
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN008
+                    - column:
+                        name: LANE_TYPE_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                    - column:
+                        name: LANE_TYPE_CODE
+                        type: VARCHAR(50)
+                        remarks: "List of lane types"
+                    - column:
+                        name: STMT_ENTRY
+                        type: VARCHAR(15)
+                        remarks: "Description of lane"
+                    - column:
+                        name: STMT_EXIT
+                        type: VARCHAR(15)
+                        remarks: "Description of lane"
+                    - column:
+                        name: CREATED_ON
+                        type: TIMESTAMP
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was created"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN009
+                    - column:
+                        name: CREATED_BY_ID
+                        type: INTEGER
+                        remarks: "ID of user who created record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN010
+                    - column:
+                        name: UPDATED_ON
+                        type: TIMESTAMP
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was updated"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN011
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: INTEGER
+                        remarks: "ID of user who updated record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN012
+                    - column:
+                        name: VERSION
+                        type: BIGINT
+                        remarks: "Opportunistic locking (oplock) (GORM)"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN013
+                    - column:
+                        name: PID
+                        type: VARCHAR(50)
+                        remarks: "Process identifier"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN014
+                    - column:
+                        name: P_UUID
+                        type: BIGINT
+                        remarks: "Process universally unique identifier that is specific to related PID"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN015
+                    - column:
+                        name: ALH_ID
+                        type: BIGINT
+                        remarks: "Access log history-history of all access logs for a single CSR"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: TOLL_LANE_NN016
+            - createIndex:
+                indexName: TOLL_LANE_IDX02
+                tableName: TOLL_LANE
+                tablespace: ${lane_ixs}
+                unique: true
+                columns:
+                - column:
+                    name: TOLL_LOCATION_ID
+                - column:
+                    name: LANE
+            - createIndex:
+                indexName: TOLL_LANE_IDX03
+                tableName: TOLL_LANE
+                tablespace: ${lane_ixs}
+                # unique: true
+                columns:
+                    - column:
+                        name: TOLL_LANE_CODE
+            - addUniqueConstraint:  # For Jacques
+                constraintName: TOLL_LANE_UQ02
+                tableName: TOLL_LANE
+                columnNames:
+                    - TOLL_LANE_CODE
+                deferrable: true
+                initiallyDeferred: true
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_LANE
+                baseColumnNames: TOLL_LOCATION_ID
+                referencedTableName: TOLL_LOCATION
+                referencedColumnNames: TOLL_LOCATION_ID
+                constraintName: TOLL_LANE_FK01
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_LANE
+                baseColumnNames: CREATED_BY_ID
+                referencedTableName: AGENCY_USER
+                referencedColumnNames: AGENCY_USER_ID
+                constraintName: TOLL_LANE_FK02
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_LANE
+                baseColumnNames: UPDATED_BY_ID
+                referencedTableName: AGENCY_USER
+                referencedColumnNames: AGENCY_USER_ID
+                constraintName: TOLL_LANE_FK03
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_LANE
+                baseColumnNames: LANE_TYPE_ID
+                referencedTableName: CODE_ATTRIBUTE
+                referencedColumnNames: ID
+                constraintName: TOLL_LANE_FK04
+            - addForeignKeyConstraint:
+                baseTableName: TOLL_LANE
+                baseColumnNames: DATA_STATUS_ID
+                referencedTableName: CODE_ATTRIBUTE
+                referencedColumnNames: ID
+                constraintName: TOLL_LANE_FK05
+        rollback:
+            - dropTable:
+                tableName: TOLL_LANE
+            - dropSequence:
+                sequenceName: TOLL_LANE_SEQ
+                ifExists: true
+    
+    - changeSet:
+        id: ${lane_version}03-TOLL_LANE.2     # major.minor.patch.module.order.tablename.seq
+        author: elau
+        labels: lane
+        context: ddl
+        comment: "Seed TOLL_LANE table from goldschema/toll_lane.tsv"
+        preConditions:
+            onFail: HALT
+            onError: HALT
+            tableExists:
+                tableName: TOLL_LANE
+            rowCount:
+                tableName: TOLL_LANE
+                expectedRows: 0
+            comment: "Prime TOLL_LANE only if table exists"
+        changes:
+            - loadData:
+                tableName: TOLL_LANE
+                file: goldschema/toll_lane.tsv
+                separator: "\t"
+                commentLineStarts: "#"
+                usePreparedStatements: true
+                columns:
+                    - column:
+                        name: TOLL_LANE_ID
+                        type: NUMERIC
+                    - column:
+                        name: TOLL_LANE_CODE	
+                        type: STRING
+                    - column:
+                        name: TOLL_LOCATION_ID	
+                        type: NUMERIC
+                    - column:
+                        name: DATA_STATUS_ID	
+                        type: NUMERIC
+                    - column:
+                        name: DATA_STATUS_CODE	
+                        type: STRING
+                    - column:
+                        name: LANE	
+                        type: NUMERIC
+                    - column:
+                        name: LANE_DESCRIPTION	
+                        type: STRING
+                    - column:
+                        name: LANE_NAME	
+                        type: STRING
+                    - column:
+                        name: TCA_PLAZA_TYPE	
+                        type: NUMERIC
+                    - column:
+                        name: LANE_TYPE_ID	
+                        type: NUMERIC
+                    - column:
+                        name: LANE_TYPE_CODE	
+                        type: STRING
+                    - column:
+                        name: STMT_ENTRY	
+                        type: STRING
+                    - column:
+                        name: STMT_EXIT
+                        type: STRING
+                    - column:
+                        name: CREATED_ON
+                        type: DATETIME
+                    - column:
+                        name: CREATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: UPDATED_ON
+                        type: DATETIME
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: VERSION
+                        type: NUMERIC
+                    - column:
+                        name: PID
+                        type: STRING
+                    - column:
+                        name: P_UUID
+                        type: NUMERIC
+                    - column:
+                        name: ALH_ID
+                        type: NUMERIC        
+            - sql:
+                dbms: oracle
+                splitStatements: false
+                sql: |
+                    DECLARE
+                        max_id  NUMBER;
+                        sql_ddl VARCHAR(128);
+                    BEGIN
+                        SELECT  COALESCE( MAX(TOLL_LANE_ID) ,0) +1
+                        INTO    max_id
+                        FROM    TOLL_LANE
+                        ;
+                        sql_ddl := 'ALTER SEQUENCE TOLL_LANE_SEQ RESTART START WITH ' || max_id;
+                        EXECUTE IMMEDIATE sql_ddl;
+                    END;
+            - sql:
+                dbms: postgresql
+                splitStatements: false
+                sql: |
+                    DO $$
+                    DECLARE
+                        max_id  BIGINT;
+                        sql_ddl TEXT;
+                    BEGIN
+                        SELECT  COALESCE( MAX(TOLL_LANE_ID) ,0) +1
+                        INTO    max_id
+                        FROM    TOLL_LANE
+                        ;
+                        sql_ddl := 'ALTER SEQUENCE TOLL_LANE_SEQ RESTART WITH ' || max_id;
+                        EXECUTE sql_ddl;
+                    END $$;
+        rollback:
+            - sql:
+                dbms: oracle
+                sql: |
+                    TRUNCATE TABLE TOLL_LANE;
+                    ALTER SEQUENCE TOLL_LANE_SEQ RESTART START WITH 1;
+            - sql:
+                dbms: postgresql
+                sql: |
+                    TRUNCATE TABLE TOLL_LANE;
+                    ALTER SEQUENCE TOLL_LANE_SEQ RESTART WITH 1;

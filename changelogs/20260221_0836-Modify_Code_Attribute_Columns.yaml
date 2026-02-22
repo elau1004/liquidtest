@@ -1,0 +1,46 @@
+databaseChangeLog:
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+
+    - changeSet:
+        id: 20260221_0836   # YYYYMMDD.HHHMI
+        author: elau
+        labels: 
+        context: ddl
+        comment: "Modify column Code_Attribute.CODE and Code_Attribute.DISPLAY_CODE"
+
+        # Change MUST be idempotent!
+        preConditions:
+            onFail: HALT
+            onError: HALT
+            and:
+                - tableExists:
+                    tableName: CODE_ATTRIBUTE
+                - columnExists:
+                    tableName: CODE_ATTRIBUTE
+                    columnName: CODE
+                - columnExists:
+                    tableName: CODE_ATTRIBUTE
+                    columnName: DISPLAY_CODE
+
+        changes:
+            - modifyDataType:
+                tableName: CODE_ATTRIBUTE
+                columnName: CODE
+                newDataType: VARCHAR( 55 )
+            - modifyDataType:
+                tableName: CODE_ATTRIBUTE
+                columnName: DISPLAY_CODE
+                newDataType: VARCHAR( 55 )
+
+        rollback:
+            - modifyDataType:
+                tableName: CODE_ATTRIBUTE
+                columnName: CODE
+                newDataType: VARCHAR( 50 )
+            - modifyDataType:
+                tableName: CODE_ATTRIBUTE
+                columnName: DISPLAY_CODE
+                newDataType: VARCHAR( 50 )

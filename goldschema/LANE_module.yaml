@@ -1,0 +1,27 @@
+databaseChangeLog:
+    # Ensures the script only runs if certain conditions are met
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+            - dbms:
+                type: oracle
+            - dbms:
+                type: postgresql
+
+    - property:
+        name: lane_version
+        value: "000.gold.lane."   # major.minor.patch
+
+    # Lane module
+    - include:
+        relativeToChangelogFile: false
+        file: goldschema/toll_road.yaml
+    - include:
+        relativeToChangelogFile: false
+        file: goldschema/toll_location.yaml
+    - include:
+        relativeToChangelogFile: false
+        file: goldschema/toll_lane.yaml
+ 

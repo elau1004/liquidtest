@@ -1,0 +1,341 @@
+databaseChangeLog:
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+            - dbms:
+                type: oracle
+            - dbms:
+                type: postgresql
+
+    - changeSet:
+        id: ${core_version}03-AGENCY_USER.1   # major.minor.patch.module.order.tablename.seq
+        author: elau
+        labels: core
+        context: ddl
+        comment: "Create AGENCY_USER table"
+
+        # Change MUST be idempotent!
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            not:
+                tableExists:
+                    tableName: AGENCY_USER
+            comment: "Skip creation if AGENCY_USER table exists"
+        changes:
+            - createSequence:
+                sequenceName: AGENCY_USER_SEQ
+            - createTable:
+                tableName: AGENCY_USER
+                tablespace: ${core_tbs}
+                remarks: "Stores information related to users of the Customer Service Center (CSC) system"
+                columns:
+                    - column:
+                        name: AGENCY_USER_ID
+                        type: BIGINT
+                        defaultValueSequenceNext : AGENCY_USER_SEQ
+                        remarks: "ID of agency user"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN001
+                            primaryKey: true
+                            primaryKeyName: AGENCY_USER_PK
+                            primaryKeyTablespace: ${core_ixs}
+                    - column:
+                        name: AGENCY_ID
+                        type: BIGINT
+                        remarks: "Foreign Agency ID"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN002
+                    - column:
+                        name: REVENUE_DATE
+                        type: DATE
+                        remarks: "Revenue date"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN003
+                    - column:
+                        name: USERNAME
+                        type: VARCHAR(50)
+                        remarks: "User name"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN004
+                    - column:
+                        name: FIRST_NAME
+                        type: VARCHAR(40)
+                        remarks: "User First name"
+                    - column:
+                        name: LAST_NAME
+                        type: VARCHAR(50)
+                        remarks: "User Last/Family name"
+                    - column:
+                        name: EMAIL_ADDRESS
+                        type: VARCHAR(320)
+                        remarks: "User eMail address"
+                    - column:
+                        name: DEPARTMENT_TYPE_ID
+                        type: BIGINT
+                        remarks: ""
+                    - column:
+                        name: DEPARTMENT_TYPE_CODE
+                        type: VARCHAR(50)
+                        remarks: ""
+                    - column:
+                        name: PASSWORD_EXPIRATION
+                        type: TIMESTAMP(3)
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date when password expires"
+                    - column:
+                        name: LAST_LOGIN
+                        type: TIMESTAMP(3)
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "TIMESTAMP(3) of user last login"
+                    - column:
+                        name: CREATED_ON
+                        type: TIMESTAMP(3)
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was created"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN005
+                    - column:
+                        name: CREATED_BY_ID
+                        type: INTEGER
+                        remarks: "ID of user who created record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN006
+                    - column:
+                        name: UPDATED_ON
+                        type: TIMESTAMP(3)
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was updated"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN007
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: INTEGER
+                        remarks: "ID of user who updated record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN008
+                    - column:
+                        name: VERSION
+                        type: BIGINT
+                        remarks: "Opportunistic locking (oplock) (GORM)"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN009
+                    - column:
+                        name: PID
+                        type: VARCHAR(50)
+                        remarks: "Process identifier"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN010
+                    - column:
+                        name: P_UUID
+                        type: BIGINT
+                        remarks: "Process universally unique identifier that is specific to related PID"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN011
+                    - column:
+                        name: ALH_ID
+                        type: BIGINT
+                        remarks: "Access log history-history of all access logs for a single CSR"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_USER_NN012
+            - createIndex:
+                indexName: AGENCY_USER_IDX02
+                tableName: AGENCY_USER
+                tablespace: ${core_ixs}
+                unique: true
+                columns:
+                    - column:
+                        name: USERNAME
+            - addForeignKeyConstraint:
+                baseTableName: AGENCY_USER
+                baseColumnNames: AGENCY_ID
+                referencedTableName: AGENCY
+                referencedColumnNames: AGENCY_ID
+                constraintName: AGENCY_USER_FK01
+            - sql: |
+                ALTER TABLE AGENCY_USER ADD CONSTRAINT AGENCY_USER_CK01 CHECK( USERNAME = UPPER(USERNAME ));
+            - sql:
+                dbms: oracle
+                sql: |
+                    ALTER TABLE AGENCY_USER ADD CONSTRAINT AGENCY_USER_CK02 CHECK( REVENUE_DATE = TRUNC(REVENUE_DATE));
+            - sql:
+                dbms: postgresql    # Wrap the function.
+                sql: |
+                    ALTER TABLE AGENCY_USER ADD CONSTRAINT AGENCY_USER_CK02 CHECK( REVENUE_DATE = DATE_TRUNC('day', REVENUE_DATE));
+        rollback:
+            - dropTable:
+                tableName: AGENCY_USER 
+                ifExists: true
+            - dropSequence:
+                sequenceName: AGENCY_USER_SEQ
+                ifExists: true
+
+    - changeSet:
+        id: ${core_version}04-AGENCY_USER.2
+        author: elau
+        labels: core
+        context: ddl
+        comment: "Seed AGENCY_USER table from goldschema/agency_user.tsv"
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            tableExists:
+                tableName: AGENCY_USER
+            rowCount:
+                tableName: AGENCY_USER
+                expectedRows: 0
+        changes:
+            - loadData:
+                tableName: AGENCY_USER
+                file: goldschema/agency_user.tsv
+                separator: "\t"
+                commentLineStarts: "#"
+                usePreparedStatements: true
+                columns:
+                    - column:
+                        name: AGENCY_USER_ID
+                        type: NUMERIC
+                    - column:
+                        name: AGENCY_ID
+                        type: NUMERIC
+                    - column:
+                        name: REVENUE_DATE
+                        type: DATE
+                    - column:
+                        name: USERNAME
+                        type: STRING
+                    - column:
+                        name: FIRST_NAME
+                        type: STRING
+                    - column:
+                        name: LAST_NAME
+                        type: STRING
+                    - column:
+                        name: EMAIL_ADDRESS
+                        type: STRING
+                    - column:
+                        name: DEPARTMENT_TYPE_ID
+                        type: NUMERIC
+                    - column:
+                        name: DEPARTMENT_TYPE_CODE
+                        type: STRING
+                    - column:
+                        name: PASSWORD_EXPIRATION
+                        type: DATETIME
+                    - column:
+                        name: LAST_LOGIN
+                        type: DATETIME
+                    - column:
+                        name: CREATED_ON
+                        type: DATETIME
+                    - column:
+                        name: CREATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: UPDATED_ON
+                        type: DATETIME
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: VERSION
+                        type: NUMERIC
+                    - column:
+                        name: PID
+                        type: STRING
+                    - column:
+                        name: P_UUID
+                        type: NUMERIC
+                    - column:
+                        name: ALH_ID
+                        type: NUMERIC
+            - sql:
+                dbms: oracle
+                splitStatements: false
+                sql: |
+                    DECLARE
+                        max_id  NUMBER;
+                        sql_ddl VARCHAR(128);
+                    BEGIN
+                        SELECT  COALESCE( MAX(AGENCY_USER_ID) ,0) +1
+                        INTO    max_id
+                        FROM    AGENCY_USER;
+                        sql_ddl := 'ALTER SEQUENCE AGENCY_USER_SEQ RESTART START WITH ' || max_id;
+                        EXECUTE IMMEDIATE sql_ddl;
+                    END;
+            - sql:
+                dbms: postgresql
+                splitStatements: false
+                sql: |
+                    DO $$
+                    DECLARE
+                        max_id  BIGINT;
+                        sql_ddl TEXT;
+                    BEGIN
+                        SELECT  COALESCE( MAX(AGENCY_USER_ID) ,0) +1
+                        INTO    max_id
+                        FROM    AGENCY_USER;
+                        sql_ddl := 'ALTER SEQUENCE AGENCY_USER_SEQ RESTART WITH ' || max_id;
+                        EXECUTE sql_ddl;
+                    END $$;
+        rollback:
+            - sql:
+                dbms: oracle
+                sql: |
+                    TRUNCATE TABLE AGENCY_USER;
+                    ALTER SEQUENCE AGENCY_USER_SEQ RESTART START WITH 1;
+            - sql:
+                dbms: postgresql
+                sql: |
+                    TRUNCATE TABLE AGENCY_USER;
+                    ALTER SEQUENCE AGENCY_USER_SEQ RESTART WITH 1;
+
+    - changeSet:
+        id: ${core_version}05-CODE_ATTRIBUTE.1    # major.minor.patch.module.order.tablename.seq
+        author: elau
+        labels: core
+        context: ddl
+        comment: "Create CODE_ATTRIBUTE FK to AGENCY_USER"
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            and:
+                tableExists:
+                    tableName: AGENCY_USER
+                tableExists:
+                    tableName: CODE_ATTRIBUTE
+            comment: "Skip creation if AGENCY_USER table exists"
+        changes:
+            - addForeignKeyConstraint:
+                baseTableName: CODE_ATTRIBUTE
+                baseColumnNames: CREATED_BY_ID
+                referencedTableName: AGENCY_USER
+                referencedColumnNames: AGENCY_USER_ID
+                constraintName: CODE_ATTRIBUTE_FK01
+            - addForeignKeyConstraint:
+                baseTableName: CODE_ATTRIBUTE
+                baseColumnNames: UPDATED_BY_ID
+                referencedTableName: AGENCY_USER
+                referencedColumnNames: AGENCY_USER_ID
+                constraintName: CODE_ATTRIBUTE_FK02
+        rollback:
+            - dropForeignKeyConstraint:
+                baseTableName: CODE_ATTRIBUTE
+                constraintName: CODE_ATTRIBUTE_FK02
+            - dropForeignKeyConstraint:
+                baseTableName: CODE_ATTRIBUTE
+                constraintName: CODE_ATTRIBUTE_FK01

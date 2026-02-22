@@ -1,0 +1,55 @@
+databaseChangeLog:
+    # Ensures the script only runs if certain conditions are met
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+            - dbms:
+                type: oracle
+            - dbms:
+                type: postgresql
+
+    - property:
+        name: gold_version
+        value: "000.gold.schema."   # major.minor.patch
+
+    # Core module
+    - include:
+        relativeToChangelogFile: true
+        file: goldschema/CORE_module.yaml
+  
+    # Acct module
+#   - include:
+#       relativeToChangelogFile: true
+#       file: goldschema/ACCT_module.yaml
+
+    # Lane module
+    - include:
+        relativeToChangelogFile: true
+        file: goldschema/LANE_module.yaml
+
+    # Cannot roll back once the intial golden schema is created.
+    # Use regular schema migration.
+    - changeSet:
+        id: ${gold_version}99-Rollback_Blockage
+        author: elau
+        labels: core
+        context: ddl,prod
+        comment: "A blockage to prevent rollback beyond this point.  The schema is golden."
+        changes:
+        rollback:
+            - sql:
+                dbms: oracle
+                sql: |
+                    BEGIN
+                        RAISE_APPLICATION_ERROR(-20001  ,'You CANNOT rollback beyond this point.  The schema is golden.');
+                    END;
+            - sql:
+                dbms: postgresql
+                sql: |
+                    DO $$
+                    BEGIN
+                        RAISE_APPLICATION_ERROR(-20001  ,'You CANNOT rollback beyond this point.  The schema is golden.');
+                    END $$;
+ 

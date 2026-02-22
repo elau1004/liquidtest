@@ -1,0 +1,218 @@
+databaseChangeLog:
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+        - dbms:
+            type: oracle
+        - dbms:
+            type: postgresql
+
+    - changeSet:
+        id: ${core_version}01-CODE_ATTRIBUTE.1    # major.minor.patch.module.order.tablename.seq
+        author: elau
+        labels: core
+        context: ddl
+        comment: "Create CODE_ATTRIBUTE table"
+
+        # Change MUST be idempotent!
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            not:
+                tableExists:
+                    tableName: CODE_ATTRIBUTE
+        changes:
+            - createTable:
+                tableName: CODE_ATTRIBUTE
+                tablespace: ${core_tbs}
+                remarks: "Stores information enumeration codes"
+                columns:
+                    - column:
+                        name: ID
+                        type: BIGINT
+                        remarks: "ID of the enumeration"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN001
+                            primaryKey: true
+                            primaryKeyName: CODE_ATTRIBUTE_PK
+                            primaryKeyTablespace: ${core_ixs}
+                    - column:
+                        name: DISCRIMINATOR
+                        type: VARCHAR(200)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN002
+                    - column:
+                        name: CODE
+                        type: VARCHAR(50)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN003
+                    - column:
+                        name: DISPLAY_CODE
+                        type: VARCHAR(50)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN004
+                    - column:
+                        name: NAME
+                        type: VARCHAR(200)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN005
+                    - column:
+                        name: IS_ACTIVE
+                        type: BOOLEAN
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN006
+                    - column:
+                        name: CREATED_ON
+                        type: TIMESTAMP(3)
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was created"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN007
+                    - column:
+                        name: CREATED_BY_ID
+                        type: INTEGER
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN008
+                    - column:
+                        name: UPDATED_ON
+                        type: TIMESTAMP(3)
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was updated"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN009
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: INTEGER
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN010
+                    - column:
+                        name: VERSION
+                        type: BIGINT
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN011
+                    - column:
+                        name: PID
+                        type: VARCHAR(50)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN012
+                    - column:
+                        name: P_UUID
+                        type: BIGINT
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN013
+                    - column:
+                        name: ALH_ID
+                        type: BIGINT
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: CODE_ATTRIBUTE_NN014
+            - createIndex:
+                indexName: CODE_ATTRIBUTE_IDX02
+                tableName: CODE_ATTRIBUTE
+                tablespace: ${core_ixs}
+                unique: true
+                columns:
+                - column:
+                    name: DISCRIMINATOR
+                - column:
+                    name: CODE
+        rollback:
+            - dropTable:
+                tableName: CODE_ATTRIBUTE
+                ifExists: true
+
+    - changeSet:
+        id: ${core_version}01-CODE_ATTRIBUTE.2
+        author: elau
+        labels: core
+        context: ddl
+        comment: "Seed CODE_ATTRIBUTE table from goldschema/code_attribute.tsv"
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            tableExists:
+                tableName: CODE_ATTRIBUTE
+            rowCount:
+                tableName: CODE_ATTRIBUTE
+                expectedRows: 0
+
+        changes:
+            - loadData:
+                tableName: CODE_ATTRIBUTE
+                file: goldschema/code_attribute.tsv
+                separator: "\t"
+                commentLineStarts: "#"
+                usePreparedStatements: true
+                columns:
+                    - column:
+                        name: ID
+                        type: NUMERIC
+                    - column:
+                        name: DISCRIMINATOR
+                        type: STRING
+                    - column:
+                        name: CODE
+                        type: STRING
+                    - column:
+                        name: DISPLAY_CODE
+                        type: STRING
+                    - column:
+                        name: NAME
+                        type: STRING
+                    - column:
+                        name: IS_ACTIVE
+                        type: BOOLEAN
+                    - column:
+                        name: CREATED_ON
+                        type: DATETIME
+                    - column:
+                        name: CREATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: UPDATED_ON
+                        type: DATETIME
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: VERSION
+                        type: NUMERIC
+                    - column:
+                        name: PID
+                        type: STRING
+                    - column:
+                        name: P_UUID
+                        type: NUMERIC
+                    - column:
+                        name: ALH_ID
+                        type: NUMERIC
+        rollback:
+        - delete:
+            tableName: CODE_ATTRIBUTE
+            where: "ID IS NOT NULL"

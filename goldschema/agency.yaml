@@ -1,0 +1,257 @@
+databaseChangeLog:
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+        - dbms:
+            type: oracle
+        - dbms:
+            type: postgresql
+
+    - changeSet:
+        id: ${core_version}02-AGENCY.1    # major.minor.patch.module.order.tablename.seq
+        author: elau
+        labels: core
+        context: ddl
+        comment: "Create AGENCY table"
+
+        # Change MUST be idempotent!
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            not:
+                tableExists:
+                    tableName: AGENCY
+        changes:
+            - createSequence:
+                sequenceName: AGENCY_SEQ
+            - createTable:
+                tableName: AGENCY
+                tablespace: ${core_tbs}
+                remarks: "Stores information related to agency of the Customer Service Center (CSC) system"
+                columns:
+                    - column:
+                        name: AGENCY_ID
+                        type: BIGINT
+                        remarks: "ID of agency user"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN001
+                            primaryKey: true
+                            primaryKeyName: AGENCY_PK
+                            primaryKeyTablespace: ${core_ixs}
+                    - column:
+                        name: AGENCY_NAME
+                        type: VARCHAR(50)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN002
+                    - column:
+                        name: AGENCY_CODE
+                        type: VARCHAR(50)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN003
+                    - column:
+                        name: AGENCY_TYPE_ID
+                        type: SMALLINT
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN004
+                    - column:
+                        name: AGENCY_TYPE_CODE
+                        type: VARCHAR(50)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN005
+                    - column:
+                        name: ACCOUNT_ID
+                        type: BIGINT
+                        remarks: ""
+                    - column:
+                        name: CREATED_ON
+                        type: TIMESTAMP(3)(3)
+                        defaultValueComputed: CURRENT_TIMESTAMP(3)
+                        remarks: "Date on which record was created"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN006
+                    - column:
+                        name: CREATED_BY_ID
+                        type: INTEGER
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN007
+                    - column:
+                        name: UPDATED_ON
+                        type: TIMESTAMP(3)(3)
+                        defaultValueComputed: CURRENT_TIMESTAMP(3)
+                        remarks: "Date on which record was updated"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN008
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: INTEGER
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN009
+                    - column:
+                        name: VERSION
+                        type: BIGINT
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN010
+                    - column:
+                        name: PID
+                        type: VARCHAR(50)
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN011
+                    - column:
+                        name: P_UUID
+                        type: BIGINT
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN012
+                    - column:
+                        name: ALH_ID
+                        type: BIGINT
+                        remarks: ""
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: AGENCY_NN013
+            - createIndex:
+                indexName: AGENCY_IDX02
+                tableName: AGENCY
+                tablespace: ${core_ixs}
+                unique: true
+                columns:
+                    - column:
+                        name: AGENCY_CODE
+        rollback:
+            - dropTable:
+                tableName: AGENCY
+                ifExists: true
+            - dropSequence:
+                sequenceName: AGENCY_SEQ
+                ifExists: true
+
+    - changeSet:
+        id: ${core_version}02-AGENCY.2
+        author: elau
+        labels: core
+        context: ddl
+        comment: "Prime AGENCY table from goldschema/agency.tsv"
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            tableExists:
+                tableName: AGENCY
+            rowCount:
+                tableName: AGENCY
+                expectedRows: 0
+            comment: "Prime AGENCY only if table exists"
+        changes:
+            - loadData:
+                tableName: AGENCY
+                file: goldschema/agency.tsv
+                separator: "\t"
+                commentLineStarts: "#"
+                usePreparedStatements: true
+                columns:
+                    - column:
+                        name: AGENCY_ID
+                        type: NUMERIC
+                    - column:
+                        name: AGENCY_NAME
+                        type: STRING
+                    - column:
+                        name: AGENCY_CODE
+                        type: STRING
+                    - column:
+                        name: AGENCY_TYPE_ID
+                        type: NUMERIC
+                    - column:
+                        name: AGENCY_TYPE_CODE
+                        type: STRING
+                    - column:
+                        name: ACCOUNT_ID
+                        type: NUMERIC
+                        remarks: ""
+                    - column:
+                        name: CREATED_ON
+                        type: DATETIME
+                    - column:
+                        name: CREATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: UPDATED_ON
+                        type: DATETIME
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: NUMERIC
+                    - column:
+                        name: VERSION
+                        type: NUMERIC
+                    - column:
+                        name: PID
+                        type: STRING
+                    - column:
+                        name: P_UUID
+                        type: NUMERIC
+                    - column:
+                        name: ALH_ID
+                        type: NUMERIC
+            - sql:
+                dbms: oracle
+                splitStatements: false
+                sql: |
+                    DECLARE
+                        max_id  NUMBER;
+                        sql_ddl VARCHAR(128);
+                    BEGIN
+                        SELECT  COALESCE( MAX(AGENCY_ID) ,0) +1
+                        INTO    max_id
+                        FROM    AGENCY
+                        ;
+                        sql_ddl := 'ALTER SEQUENCE AGENCY_SEQ RESTART START WITH ' || max_id;
+                        EXECUTE IMMEDIATE sql_ddl;
+                    END;
+            - sql:
+                dbms: postgresql
+                splitStatements: false
+                sql: |
+                    DO $$
+                    DECLARE
+                        max_id  BIGINT;
+                        sql_ddl TEXT;
+                    BEGIN
+                        SELECT  COALESCE( MAX(AGENCY_ID) ,0) +1
+                        INTO    max_id
+                        FROM    AGENCY
+                        ;
+                        sql_ddl := 'ALTER SEQUENCE AGENCY_SEQ RESTART WITH ' || max_id;
+                        EXECUTE sql_ddl;
+                    END $$;
+        rollback:
+            - sql:
+                dbms: oracle
+                sql: |
+                    TRUNCATE TABLE AGENCY;
+                    ALTER SEQUENCE AGENCY_SEQ RESTART START WITH 1;
+            - sql:
+                dbms: postgresql
+                sql: |
+                    TRUNCATE TABLE AGENCY;
+                    ALTER SEQUENCE AGENCY_SEQ RESTART WITH 1;

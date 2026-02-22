@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260221_0823   # YYYYMMDD.HHHMI
+      author: elau
+      labels: ddl
+      context: prod,dev
+      comment: "Add a new column MIDDLE_NAME to Agency_User table"
+      
+        # Change MUST be idempotent!
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - tableExists:
+            tableName: AGENCY_USER
+        - not:
+            columnExists:
+              tableName: AGENCY_USER
+              columnName: MIDDLE_NAME
+
+      changes:
+        - addColumn:
+            schemaName: TPS
+            tableName: AGENCY_USER
+            columns:
+              - column:
+                  name: MIDDLE_NAME
+                  type: VARCHAR(40)
+                  remarks: "User Middle name"
+                  constraints:
+                    nullable: true
+
+      rollback:
+        - dropColumn:
+            tableName: AGENCY_USER
+            columnName: MIDDLE_NAME

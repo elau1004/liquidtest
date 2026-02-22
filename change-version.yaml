@@ -1,0 +1,10 @@
+databaseChangeLog:
+    # Ensures the script only runs if certain conditions are met
+    - preConditions:
+        - onFail: HALT
+        - dbms:
+              type: oracle,postgresql
+
+    - includeAll:
+        path: changelogs/
+        relativeToChangelogFile: true

@@ -1,0 +1,20 @@
+databaseChangeLog:
+    # Ensures the script only runs if certain conditions are met
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+            - dbms:
+                type: oracle
+            - dbms:
+                type: postgresql
+
+    - property:
+        name: acct_version
+        value: "000.gold.acct."   # major.minor.patch
+
+    # Core module
+    - include:
+        relativeToChangelogFile: false
+        file: goldschema/account.yaml
