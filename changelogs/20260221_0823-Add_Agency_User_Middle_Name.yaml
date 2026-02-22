@@ -24,7 +24,6 @@ databaseChangeLog:
     
         changes:
           - addColumn:
-              schemaName: TPS
               tableName: AGENCY_USER
               columns:
                 - column:
