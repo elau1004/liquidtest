@@ -20,9 +20,9 @@ databaseChangeLog:
         file: goldschema/CORE_module.yaml
   
     # Acct module
-#   - include:
-#       relativeToChangelogFile: true
-#       file: goldschema/ACCT_module.yaml
+    - include:
+        relativeToChangelogFile: true
+        file: goldschema/ACCT_module.yaml
 
     # Lane module
     - include:

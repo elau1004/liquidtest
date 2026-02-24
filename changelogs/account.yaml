@@ -1,0 +1,299 @@
+databaseChangeLog:
+    - preConditions:
+        onFail: HALT
+        onError: HALT
+        comment: "Allow execution ONLY on Oracle or PostgreSQL"
+        or:
+        - dbms:
+            type: oracle
+        - dbms:
+            type: postgresql
+
+    - changeSet:
+        id: ${acct_version}01-ACCOUNT.1    # major.minor.patch.module.order.tablename.seq
+        author: elau
+        labels: acct
+        context: ddl
+        comment: "Create ACCOUNT table"
+
+        # Change MUST be idempotent!
+        preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            not:
+                tableExists:
+                    tableName: ACCOUNT
+        changes:
+            - createSequence:
+                sequenceName: ACCOUNT_SEQ
+            - createTable:
+                tableName: ACCOUNT
+                tablespace: ${acct_tbs}
+                remarks: "Stores information enumeration codes"
+                columns:
+                    - column:
+                        name: ACCOUNT_ID
+                        type: BIGINT
+                        remarks: "Primary key; unique number assigned to the account"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN001
+                            primaryKey: true
+                            primaryKeyName: ACCOUNT_PK
+                            primaryKeyTablespace: ${acct_ixs}
+                    - column:
+                        name: ACCOUNT_NUMBER
+                        type: VARCHAR(50)
+                        remarks: "Account number"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN002
+                    - column:
+                        name: AGENCY_ID
+                        type: BIGINT
+                        remarks: "Issuing agency for the account"
+                    - column:
+                        name: REVENUE_DATE
+                        type: DATE
+                        remarks: "Revenue date"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN004
+                    - column:
+                        name: ACCOUNT_HISTORY_ID
+                        type: BIGINT
+                        remarks: "Identifier of the transaction history of an account"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN005
+                    - column:
+                        name: ACCOUNT_STATUS_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN006
+                    - column:
+                        name: ACCOUNT_STATUS_CODE
+                        type: VARCHAR(50)
+                        remarks: "Status of account (open, closed, etc.)"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN007
+                    - column:
+                        name: ACCOUNT_TYPE_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN008
+                    - column:
+                        name: ACCOUNT_TYPE_CODE
+                        type: VARCHAR(50)
+                        remarks: "Type of account"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN009
+                    - column:
+                        name: ACCOUNT_SUBTYPE_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN010
+                    - column:
+                        name: ACCOUNT_SUBTYPE_CODE
+                        type: VARCHAR(50)
+                        remarks: "Sub-type of account"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN011
+                    - column:
+                        name: TRANSACTION_ID
+                        type: BIGINT
+                        remarks: "Identifier for a general change record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN012
+                    - column:
+                        name: TRANSACTION_TYPE_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN013
+                    - column:
+                        name: TRANSACTION_TYPE_CODE
+                        type: VARCHAR(50)
+                        remarks: "List of transaction types"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN014
+                    - column:
+                        name: MAIL_HANDLING_TYPE_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                    - column:
+                        name: MAIL_HANDLING_TYPE_CODE
+                        type: VARCHAR(50)
+                        remarks: "List of mail handling types"
+                    - column:
+                        name: PRIMARY_BALANCE_ID
+                        type: BIGINT
+                        remarks: "Identifier for a primary balance"
+                    - column:
+                        name: REPLENISHMENT_AMOUNT
+                        type: NUMBER(11,2)
+                        remarks: "Replenishment amount"
+                    - column:
+                        name: REPLENISHMENT_THRESHOLD
+                        type: NUMBER(11,2)
+                        remarks: "Replenishment threshold"
+                    - column:
+                        name: PRIMARY_USER_ID
+                        type: BIGINT
+                        remarks: "Identifier for primary user"
+                    - column:
+                        name: MASTER_ACCOUNT_ID
+                        type: BIGINT
+                        remarks: "Identifier for master account for fleet vehicles"
+                    - column:
+                        name: MASTER_LINKED_ON
+                        type: DATETIME
+                        remarks: ""
+                    - column:
+                        name: MASTER_LINKED_BY_ID
+                        type: BIGINT
+                        remarks: ""
+                    - column:
+                        name: PAYMENT_ERROR_DATE
+                        type: DATE
+                        remarks: ""
+                    - column:
+                        name: PAYMENT_ERROR_COUNT
+                        type: INTEGER
+                        remarks: ""
+                    - column:
+                        name: PAYMENT_ERROR_FAILURE_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                    - column:
+                        name: PAYMENT_ERROR_FAILURE_CODE
+                        type: VARCHAR(50)
+                        remarks: "List of payment error status types"
+                    - column:
+                        name: SUSPEND_PROCESS_TYPE_ID
+                        type: INTEGER
+                        remarks: "ID that applies to the corresponding code"
+                    - column:
+                        name: SUSPEND_PROCESS_TYPE_CODE
+                        type: VARCHAR(50)
+                        remarks: "List of suspend process types"
+                    - column:
+                        name: SUSPEND_PROCESS_START_DATE
+                        type: DATE
+                        remarks: "Start date of suspension process"
+                    - column:
+                        name: SUSPEND_PROCESS_END_DATE
+                        type: DATE
+                        remarks: "End date of suspension process"
+                    - column:
+                        name: CLOSE_ON_DATE
+                        type: DATE
+                        remarks: "Date in which account is to be closed"
+                    - column:
+                        name: CLOSED_DATE
+                        type: DATE
+                        remarks: "Date in which account was closed"
+                    - column:
+                        name: CREATED_ON
+                        type: TIMESTAMP
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was created"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN015
+                    - column:
+                        name: CREATED_BY_ID
+                        type: INTEGER
+                        remarks: "ID of user who created record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN016
+                    - column:
+                        name: UPDATED_ON
+                        type: TIMESTAMP
+                        defaultValueComputed: CURRENT_TIMESTAMP
+                        remarks: "Date on which record was updated"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN017
+                    - column:
+                        name: UPDATED_BY_ID
+                        type: INTEGER
+                        remarks: "ID of user who updated record"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN018
+                    - column:
+                        name: VERSION
+                        type: BIGINT
+                        remarks: "Opportunistic locking (oplock) (GORM)"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN019
+                    - column:
+                        name: PID
+                        type: VARCHAR(50)
+                        remarks: "Process identifier"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN020
+                    - column:
+                        name: P_UUID
+                        type: BIGINT
+                        remarks: "Process universally unique identifier that is specific to related PID"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN021
+                    - column:
+                        name: ALH_ID
+                        type: BIGINT
+                        remarks: "Access log history-history of all access logs for a single CSR"
+                        constraints:
+                            nullable: false
+                            notNullConstraintName: ACCOUNT_NN022
+
+            - sql:
+                dbms: postgresql
+                sql: "ALTER TABLE ACCOUNT ALTER COLUMN ACCOUNT_ID SET DEFAULT nextval('ACCOUNT_SEQ')"
+            - sql:
+                dbms: oracle
+                sql: "ALTER TABLE ACCOUNT       MODIFY ACCOUNT_ID     DEFAULT ACCOUNT_SEQ.NEXTVAL"
+
+            - createIndex:
+                indexName: ACCOUNT_IDX02
+                tableName: ACCOUNT
+                tablespace: ${acct_ixs}
+                unique: true
+                columns:
+                - column:
+                    name: ACCOUNT_NUMBER
+                - column:
+                    name: AGENCY_ID
+            - createIndex:
+                indexName: ACCOUNT_IDX03
+                tableName: ACCOUNT
+                tablespace: ${acct_ixs}
+                unique: false
+                columns:
+                - column:
+                    name: ACCOUNT_TYPE_CODE
+        rollback:
+            - dropTable:
+                tableName: ACCOUNT
+                ifExists: true
+            - dropSequence:
+                sequenceName: ACCOUNT_SEQ
+                ifExists: true
+ 
