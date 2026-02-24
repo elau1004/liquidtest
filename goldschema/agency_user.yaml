@@ -166,6 +166,12 @@ databaseChangeLog:
                 referencedTableName: AGENCY
                 referencedColumnNames: AGENCY_ID
                 constraintName: AGENCY_USER_FK01
+            - addForeignKeyConstraint:
+                baseTableName: AGENCY_USER
+                baseColumnNames: DEPARTMENT_TYPE_ID
+                referencedTableName: CODE_ATTRIBUTE
+                referencedColumnNames: ID
+                constraintName: AGENCY_USER_FK02
             - sql: |
                 ALTER TABLE AGENCY_USER ADD CONSTRAINT AGENCY_USER_CK01 CHECK( USERNAME = UPPER(USERNAME ));
             - sql:
